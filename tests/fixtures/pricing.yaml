@@ -5,6 +5,10 @@ models:
     name: Test model
     input_price_per_million: "1.00"
     output_price_per_million: "2.00"
+    long_context:
+      above_input_tokens: 2000000
+      input_price_per_million: "3.00"
+      output_price_per_million: "6.00"
     pricing_status: verified
     effective_date: 2026-01-01
     source_url: https://example.com/pricing
@@ -16,3 +20,14 @@ models:
     output_price_per_million: "1.50"
     pricing_status: illustrative
     effective_date: 2025-01-01
+
+  - id: test-expired
+    provider: TestAI
+    name: Expired promo model
+    input_price_per_million: "0.25"
+    output_price_per_million: "0.75"
+    pricing_status: verified
+    effective_date: 2026-02-01
+    valid_until: 2026-02-28
+    source_url: https://example.com/pricing
+    notes: Promo pricing ended.

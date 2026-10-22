@@ -22,10 +22,12 @@ def write(tmp_path: Path, content: str) -> Path:
     return path
 
 
-def test_shipped_pricing_file_is_valid() -> None:
+def test_shipped_pricing_file_is_valid_and_verified() -> None:
     repository = PricingRepository.from_yaml(DEFAULT_PRICING_FILE)
 
     assert len(repository) > 0
+    unverified = [m.id for m in repository.all() if m.pricing_status != "verified"]
+    assert unverified == [], "shipped prices must be verified against a source"
 
 
 def test_loads_and_looks_up_models(tmp_path: Path) -> None:
@@ -59,6 +61,19 @@ def test_missing_file(tmp_path: Path) -> None:
             "source_url",
         ),
         ("models:" + VALID_ENTRY.format(id="Bad ID"), "pattern"),
+        (
+            "models:" + VALID_ENTRY.format(id="a") + "    valid_until: 2025-12-31\n",
+            "valid_until must not be before effective_date",
+        ),
+        (
+            "models:"
+            + VALID_ENTRY.format(id="a")
+            + "    long_context:\n"
+            + "      above_input_tokens: 10\n"
+            + "      input_price_per_million: 2.5\n"
+            + '      output_price_per_million: "5.00"\n',
+            "quoted strings",
+        ),
         ("models:\n  - [unclosed", "cannot read"),
     ],
 )

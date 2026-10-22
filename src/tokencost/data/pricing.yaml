@@ -1,35 +1,83 @@
-# Model pricing, in USD per million tokens.
+# Model pricing, in USD per million tokens (standard tier: not batch, cached,
+# fast/priority, or regional uplift). See docs/updating-prices.md.
 #
 # Rules (enforced when the app starts):
 # - Prices are quoted strings ("0.15"), never bare numbers, to avoid float rounding.
-# - pricing_status is "illustrative" (placeholder) or "verified".
 # - Verified entries must have a source_url pointing at the provider's pricing page.
-# - effective_date is when the price was last checked; estimates are flagged
-#   as stale once it is older than TOKENCOST_STALE_AFTER_DAYS (default 90).
-#
-# These entries are illustrative placeholders. Real prices land in milestone M2.
+# - effective_date is the day the price was last checked against that page.
+# - valid_until is the last day a price applies, when a change is announced.
+# - long_context holds the prices for a request whose input exceeds the threshold.
 
 models:
-  - id: openai-example
-    provider: OpenAI
-    name: OpenAI example model
-    input_price_per_million: "0.15"
-    output_price_per_million: "0.60"
-    pricing_status: illustrative
-    effective_date: 2026-10-22
-
-  - id: anthropic-example
+  # --- Anthropic: https://platform.claude.com/docs/en/about-claude/pricing
+  - id: claude-fable-5-1
     provider: Anthropic
-    name: Anthropic example model
-    input_price_per_million: "0.80"
-    output_price_per_million: "4.00"
-    pricing_status: illustrative
+    name: Claude Fable 5.1
+    input_price_per_million: "10.00"
+    output_price_per_million: "50.00"
+    pricing_status: verified
     effective_date: 2026-10-22
+    source_url: https://platform.claude.com/docs/en/about-claude/pricing
 
-  - id: google-example
+  - id: claude-haiku-5-5
+    provider: Anthropic
+    name: Claude Haiku 5.5
+    input_price_per_million: "0.10"
+    output_price_per_million: "0.50"
+    long_context:
+      above_input_tokens: 100000
+      input_price_per_million: "0.50"
+      output_price_per_million: "2.50"
+    pricing_status: verified
+    effective_date: 2026-10-22
+    source_url: https://platform.claude.com/docs/en/about-claude/pricing
+
+  # --- OpenAI: https://platform.openai.com/docs/pricing
+  - id: gpt-6-astra
+    provider: OpenAI
+    name: GPT-6 Astra
+    input_price_per_million: "10.00"
+    output_price_per_million: "50.00"
+    long_context:
+      above_input_tokens: 272000
+      input_price_per_million: "20.00"
+      output_price_per_million: "75.00"
+    pricing_status: verified
+    effective_date: 2026-10-22
+    source_url: https://platform.openai.com/docs/pricing
+
+  - id: gpt-6-luna
+    provider: OpenAI
+    name: GPT-6 Luna
+    input_price_per_million: "0.10"
+    output_price_per_million: "0.50"
+    long_context:
+      above_input_tokens: 272000
+      input_price_per_million: "0.20"
+      output_price_per_million: "0.75"
+    pricing_status: verified
+    effective_date: 2026-10-22
+    source_url: https://platform.openai.com/docs/pricing
+
+  # --- Google: https://ai.google.dev/gemini-api/docs/pricing
+  - id: gemini-4-argon
     provider: Google
-    name: Google example model
+    name: Gemini 4 Argon
+    input_price_per_million: "2.00"
+    output_price_per_million: "10.00"
+    pricing_status: verified
+    effective_date: 2026-10-22
+    valid_until: 2026-11-30
+    source_url: https://ai.google.dev/gemini-api/docs/pricing
+    notes: >-
+      Launch pricing. Google has announced $4.00 input / $20.00 output
+      per million tokens starting 2026-12-01.
+
+  - id: gemini-3.5-flash-lite
+    provider: Google
+    name: Gemini 3.5 Flash-Lite
     input_price_per_million: "0.30"
     output_price_per_million: "2.50"
-    pricing_status: illustrative
+    pricing_status: verified
     effective_date: 2026-10-22
+    source_url: https://ai.google.dev/gemini-api/docs/pricing

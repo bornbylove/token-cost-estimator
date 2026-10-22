@@ -3,7 +3,7 @@
 from datetime import date
 from decimal import ROUND_HALF_UP, Decimal
 
-from tokencost.core.schemas import Estimate, ModelPrice
+from tokencost.core.schemas import Estimate, ModelPrice, PriceTier
 
 MILLION = Decimal(1_000_000)
 COST_PRECISION = Decimal("0.000001")
@@ -16,7 +16,28 @@ def token_cost(tokens: int, price_per_million: Decimal) -> Decimal:
 
 
 def is_stale(model: ModelPrice, *, today: date, stale_after_days: int) -> bool:
+    """True when the price is too old to trust or past its announced end date."""
+    if model.valid_until is not None and today > model.valid_until:
+        return True
     return (today - model.effective_date).days > stale_after_days
+
+
+def prices_for(
+    model: ModelPrice, input_tokens: int
+) -> tuple[PriceTier, Decimal, Decimal]:
+    """The (tier, input price, output price) that apply to a request of this size."""
+    tier = model.long_context
+    if tier is not None and input_tokens > tier.above_input_tokens:
+        return (
+            "long_context",
+            tier.input_price_per_million,
+            tier.output_price_per_million,
+        )
+    return (
+        "standard",
+        model.input_price_per_million,
+        model.output_price_per_million,
+    )
 
 
 def estimate(
@@ -27,8 +48,9 @@ def estimate(
     today: date,
     stale_after_days: int,
 ) -> Estimate:
-    input_cost = token_cost(input_tokens, model.input_price_per_million)
-    output_cost = token_cost(output_tokens, model.output_price_per_million)
+    price_tier, input_price, output_price = prices_for(model, input_tokens)
+    input_cost = token_cost(input_tokens, input_price)
+    output_cost = token_cost(output_tokens, output_price)
 
     return Estimate(
         model_id=model.id,
@@ -36,11 +58,14 @@ def estimate(
         model_name=model.name,
         input_tokens=input_tokens,
         output_tokens=output_tokens,
+        price_tier=price_tier,
         input_cost_usd=input_cost,
         output_cost_usd=output_cost,
         # Sum the rounded parts so the line items always add up to the total.
         total_cost_usd=input_cost + output_cost,
         pricing_status=model.pricing_status,
         effective_date=model.effective_date,
+        valid_until=model.valid_until,
         stale=is_stale(model, today=today, stale_after_days=stale_after_days),
+        notes=model.notes,
     )

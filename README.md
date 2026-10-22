@@ -2,9 +2,24 @@
 
 Estimate and compare the cost of AI model usage across providers.
 
-> **Status:** early development (milestone M1). Prices in the app are
-> illustrative placeholders, not verified provider pricing. Estimates are
-> not invoices.
+> **Status:** early development (milestone M2). Prices are checked by hand
+> against each provider's official pricing page; each estimate shows the date
+> its prices were checked. Estimates are not invoices.
+
+## Supported models
+
+| Provider  | Model                 | id                      |
+| --------- | --------------------- | ----------------------- |
+| Anthropic | Claude Fable 5.1      | `claude-fable-5-1`      |
+| Anthropic | Claude Haiku 5.5      | `claude-haiku-5-5`      |
+| OpenAI    | GPT-6 Astra           | `gpt-6-astra`           |
+| OpenAI    | GPT-6 Luna            | `gpt-6-luna`            |
+| Google    | Gemini 4 Argon        | `gemini-4-argon`        |
+| Google    | Gemini 3.5 Flash-Lite | `gemini-3.5-flash-lite` |
+
+Prices are the standard text rates. When a model charges more for long
+prompts, the higher rate is applied automatically. To add or update a price,
+see [docs/updating-prices.md](docs/updating-prices.md).
 
 ## Requirements
 
@@ -33,11 +48,13 @@ All endpoints are documented interactively at `/docs`.
 ```sh
 curl -X POST localhost:8000/api/v1/estimate \
   -H 'Content-Type: application/json' \
-  -d '{"model_id": "anthropic-example", "input_tokens": 1000000, "output_tokens": 500000}'
+  -d '{"model_id": "claude-haiku-5-5", "input_tokens": 1000000, "output_tokens": 500000}'
 ```
 
 Money values are strings in USD with 6 decimal places. Responses include
-`pricing_status`, `effective_date`, and `stale` (price older than 90 days).
+`price_tier` (`standard` or `long_context`), `effective_date`, `valid_until`,
+`notes`, and `stale`. `stale` is true when the price was last checked more
+than 90 days ago or its `valid_until` date has passed.
 Errors always look like `{"error": {"code": "...", "message": "..."}}`.
 
 ## Configuration

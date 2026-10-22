@@ -6,19 +6,27 @@ def test_list_models(client: TestClient) -> None:
 
     assert response.status_code == 200
     models = {m["id"]: m for m in response.json()}
-    assert set(models) == {"test-model", "test-old"}
+    assert set(models) == {"test-model", "test-old", "test-expired"}
     assert models["test-model"] == {
         "id": "test-model",
         "provider": "TestAI",
         "name": "Test model",
         "input_price_per_million": "1.00",
         "output_price_per_million": "2.00",
+        "long_context": {
+            "above_input_tokens": 2_000_000,
+            "input_price_per_million": "3.00",
+            "output_price_per_million": "6.00",
+        },
         "pricing_status": "verified",
         "effective_date": "2026-01-01",
+        "valid_until": None,
         "source_url": "https://example.com/pricing",
+        "notes": None,
         "stale": False,
     }
     assert models["test-old"]["stale"] is True
+    assert models["test-expired"]["stale"] is True
 
 
 def test_get_model(client: TestClient) -> None:

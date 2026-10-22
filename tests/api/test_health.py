@@ -12,7 +12,7 @@ def test_ready_reports_loaded_models(client: TestClient) -> None:
     response = client.get("/ready")
 
     assert response.status_code == 200
-    assert response.json() == {"status": "ready", "models": 2}
+    assert response.json() == {"status": "ready", "models": 3}
 
 
 def test_unexpected_errors_use_envelope_without_leaking_details(
