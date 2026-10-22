@@ -1,0 +1,35 @@
+# Model pricing, in USD per million tokens.
+#
+# Rules (enforced when the app starts):
+# - Prices are quoted strings ("0.15"), never bare numbers, to avoid float rounding.
+# - pricing_status is "illustrative" (placeholder) or "verified".
+# - Verified entries must have a source_url pointing at the provider's pricing page.
+# - effective_date is when the price was last checked; estimates are flagged
+#   as stale once it is older than TOKENCOST_STALE_AFTER_DAYS (default 90).
+#
+# These entries are illustrative placeholders. Real prices land in milestone M2.
+
+models:
+  - id: openai-example
+    provider: OpenAI
+    name: OpenAI example model
+    input_price_per_million: "0.15"
+    output_price_per_million: "0.60"
+    pricing_status: illustrative
+    effective_date: 2026-10-22
+
+  - id: anthropic-example
+    provider: Anthropic
+    name: Anthropic example model
+    input_price_per_million: "0.80"
+    output_price_per_million: "4.00"
+    pricing_status: illustrative
+    effective_date: 2026-10-22
+
+  - id: google-example
+    provider: Google
+    name: Google example model
+    input_price_per_million: "0.30"
+    output_price_per_million: "2.50"
+    pricing_status: illustrative
+    effective_date: 2026-10-22

@@ -1,0 +1,48 @@
+from collections.abc import Callable
+from datetime import date
+
+from fastapi import APIRouter, FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+from tokencost import __version__
+from tokencost.api.errors import register_error_handlers
+from tokencost.api.routes import estimates, health, models
+from tokencost.core.config import Settings
+from tokencost.core.repository import PricingRepository
+from tokencost.core.service import PricingService
+
+
+def create_app(
+    settings: Settings | None = None,
+    *,
+    today: Callable[[], date] = date.today,
+) -> FastAPI:
+    """Build the app. Fails fast if the pricing file is missing or invalid."""
+    settings = settings or Settings()
+    repository = PricingRepository.from_yaml(settings.pricing_file)
+
+    app = FastAPI(
+        title="Token Cost Estimator API",
+        description="Estimate token costs across AI providers.",
+        version=__version__,
+    )
+    app.state.pricing_service = PricingService(
+        repository, stale_after_days=settings.stale_after_days, today=today
+    )
+
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.cors_origins,
+        allow_credentials=False,
+        allow_methods=["GET", "POST"],
+        allow_headers=["Content-Type"],
+    )
+    register_error_handlers(app)
+
+    app.include_router(health.router)
+    api = APIRouter(prefix="/api/v1")
+    api.include_router(models.router)
+    api.include_router(estimates.router)
+    app.include_router(api)
+
+    return app

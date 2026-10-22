@@ -1,0 +1,18 @@
+# Stable test data, independent of the shipped pricing file.
+models:
+  - id: test-model
+    provider: TestAI
+    name: Test model
+    input_price_per_million: "1.00"
+    output_price_per_million: "2.00"
+    pricing_status: verified
+    effective_date: 2026-01-01
+    source_url: https://example.com/pricing
+
+  - id: test-old
+    provider: TestAI
+    name: Old test model
+    input_price_per_million: "0.50"
+    output_price_per_million: "1.50"
+    pricing_status: illustrative
+    effective_date: 2025-01-01
