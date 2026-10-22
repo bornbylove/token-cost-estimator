@@ -4,7 +4,12 @@ from decimal import Decimal
 import pytest
 
 from tokencost.core.pricing import estimate, is_stale, prices_for, token_cost
-from tokencost.core.schemas import MAX_TOKENS, LongContextPrice, ModelPrice
+from tokencost.core.schemas import (
+    MAX_REQUESTS_PER_DAY,
+    MAX_TOKENS,
+    LongContextPrice,
+    ModelPrice,
+)
 
 MODEL = ModelPrice(
     id="m",
@@ -93,3 +98,58 @@ def test_prices_for_threshold_is_exclusive(
 
 def test_prices_for_without_tier_is_always_standard() -> None:
     assert prices_for(MODEL, MAX_TOKENS)[0] == "standard"
+
+
+def test_projection_does_not_round_tiny_requests_to_zero() -> None:
+    cheap = MODEL.model_copy(update={"input_price_per_million": Decimal("0.10")})
+
+    result = estimate(
+        cheap,
+        1,
+        0,
+        today=date(2026, 1, 2),
+        stale_after_days=90,
+        requests_per_day=1_000_000,
+    )
+
+    assert result.total_cost_usd == Decimal("0.000000")
+    assert result.projection is not None
+    assert result.projection.daily_cost_usd == Decimal("0.100000")
+    assert result.projection.monthly_cost_usd == Decimal("3.000000")
+
+
+def test_projection_uses_the_per_request_price_tier() -> None:
+    result = estimate(
+        TIERED,
+        100_001,
+        0,
+        today=date(2026, 1, 2),
+        stale_after_days=90,
+        requests_per_day=10,
+    )
+
+    assert result.price_tier == "long_context"
+    assert result.projection is not None
+    # 100,001 tokens x 10 requests at $1.60/M
+    assert result.projection.daily_cost_usd == Decimal("1.600016")
+
+
+def test_projection_handles_maximum_inputs_exactly() -> None:
+    result = estimate(
+        MODEL,
+        MAX_TOKENS,
+        MAX_TOKENS,
+        today=date(2026, 1, 2),
+        stale_after_days=90,
+        requests_per_day=MAX_REQUESTS_PER_DAY,
+    )
+
+    assert result.projection is not None
+    # (1e12 x $0.80 + 1e12 x $4.00) / 1e6 x 1e7 requests x 30 days
+    assert result.projection.monthly_cost_usd == Decimal("1440000000000000.000000")
+
+
+def test_no_projection_without_requests_per_day() -> None:
+    result = estimate(MODEL, 1, 1, today=date(2026, 1, 2), stale_after_days=90)
+
+    assert result.projection is None

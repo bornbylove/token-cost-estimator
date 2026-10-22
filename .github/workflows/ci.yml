@@ -8,6 +8,8 @@ on:
 jobs:
   check:
     runs-on: ubuntu-latest
+    env:
+      TIKTOKEN_CACHE_DIR: ${{ github.workspace }}/.tiktoken-cache
     strategy:
       fail-fast: false
       matrix:
@@ -19,6 +21,12 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           enable-cache: true
+
+      - name: Cache tokenizer vocabulary
+        uses: actions/cache@v4
+        with:
+          path: .tiktoken-cache
+          key: tiktoken-o200k_base
 
       - name: Install dependencies
         run: uv sync --locked

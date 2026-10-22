@@ -5,7 +5,14 @@ from datetime import date
 
 from tokencost.core import pricing
 from tokencost.core.repository import PricingRepository
-from tokencost.core.schemas import Estimate, EstimateRequest, ModelInfo, ModelPrice
+from tokencost.core.schemas import (
+    CompareRequest,
+    Comparison,
+    Estimate,
+    EstimateRequest,
+    ModelInfo,
+    ModelPrice,
+)
 
 
 class ModelNotFoundError(LookupError):
@@ -37,12 +44,38 @@ class PricingService:
         return self._info(self._require(model_id))
 
     def estimate(self, request: EstimateRequest) -> Estimate:
+        return self._estimate(self._require(request.model_id), request)
+
+    def compare(self, request: CompareRequest) -> Comparison:
+        if request.model_ids is None:
+            models = self._repository.all()
+        else:
+            # Look up every id first, so one unknown id fails the whole request.
+            unique_ids = dict.fromkeys(request.model_ids)
+            models = [self._require(model_id) for model_id in unique_ids]
+
+        estimates = sorted(
+            (self._estimate(model, request) for model in models),
+            key=lambda e: (e.total_cost_usd, e.model_id),
+        )
+        lowest = estimates[0].total_cost_usd
+        return Comparison(
+            estimates=estimates,
+            cheapest_model_ids=[
+                e.model_id for e in estimates if e.total_cost_usd == lowest
+            ],
+        )
+
+    def _estimate(
+        self, model: ModelPrice, usage: EstimateRequest | CompareRequest
+    ) -> Estimate:
         return pricing.estimate(
-            self._require(request.model_id),
-            request.input_tokens,
-            request.output_tokens,
+            model,
+            usage.input_tokens,
+            usage.output_tokens,
             today=self._today(),
             stale_after_days=self._stale_after_days,
+            requests_per_day=usage.requests_per_day,
         )
 
     def _require(self, model_id: str) -> ModelPrice:

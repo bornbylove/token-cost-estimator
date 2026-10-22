@@ -16,6 +16,11 @@ PricingStatus = Literal["illustrative", "verified"]
 # Upper bound on any token count we accept, to keep arithmetic and abuse in check.
 MAX_TOKENS = 1_000_000_000_000
 
+MAX_REQUESTS_PER_DAY = 10_000_000
+MAX_COMPARE_MODELS = 50
+MAX_TEXT_CHARS = 1_000_000
+DAYS_PER_MONTH = 30
+
 TokenCount = Annotated[int, Field(ge=0, le=MAX_TOKENS)]
 PricePerMillion = Annotated[Decimal, Field(ge=0)]
 PriceTier = Literal["standard", "long_context"]
@@ -80,12 +85,34 @@ class ModelInfo(ModelPrice):
     stale: bool
 
 
-class EstimateRequest(BaseModel):
+class _Usage(BaseModel):
+    """Token usage of one request, optionally repeated daily for a projection."""
+
     model_config = ConfigDict(extra="forbid")
 
-    model_id: str
     input_tokens: TokenCount
     output_tokens: TokenCount
+    requests_per_day: int | None = Field(default=None, ge=1, le=MAX_REQUESTS_PER_DAY)
+
+
+class EstimateRequest(_Usage):
+    model_id: str
+
+
+class CompareRequest(_Usage):
+    # Omit to compare every available model.
+    model_ids: list[str] | None = Field(
+        default=None, min_length=1, max_length=MAX_COMPARE_MODELS
+    )
+
+
+class Projection(BaseModel):
+    """Cost of repeating the same request every day."""
+
+    requests_per_day: int
+    days_per_month: int = DAYS_PER_MONTH
+    daily_cost_usd: Decimal
+    monthly_cost_usd: Decimal
 
 
 class Estimate(BaseModel):
@@ -101,8 +128,31 @@ class Estimate(BaseModel):
     output_cost_usd: Decimal
     total_cost_usd: Decimal
     currency: Literal["USD"] = "USD"
+    projection: Projection | None = None
     pricing_status: PricingStatus
     effective_date: date
     valid_until: date | None
     stale: bool
     notes: str | None
+
+
+class Comparison(BaseModel):
+    """Estimates for several models, cheapest first."""
+
+    estimates: list[Estimate]
+    # Every model tied for the lowest per-request cost.
+    cheapest_model_ids: list[str]
+
+
+class TokenCountRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    text: str = Field(max_length=MAX_TEXT_CHARS)
+
+
+class TokenCountResult(BaseModel):
+    characters: int
+    tokens: int
+    method: Literal["approximate"]
+    tokenizer: str
+    note: str

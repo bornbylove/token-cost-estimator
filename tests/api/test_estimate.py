@@ -27,6 +27,7 @@ def test_estimate(client: TestClient) -> None:
         "output_cost_usd": "0.500000",
         "total_cost_usd": "2.000000",
         "currency": "USD",
+        "projection": None,
         "pricing_status": "verified",
         "effective_date": "2026-01-01",
         "valid_until": None,
@@ -65,6 +66,23 @@ def test_estimate_flags_expired_pricing_with_notes(client: TestClient) -> None:
     assert body["notes"] == "Promo pricing ended."
 
 
+def test_estimate_with_projection(client: TestClient) -> None:
+    response = post_estimate(
+        client,
+        model_id="test-model",
+        input_tokens=1_000,
+        output_tokens=500,
+        requests_per_day=1_000,
+    )
+
+    assert response.json()["projection"] == {
+        "requests_per_day": 1_000,
+        "days_per_month": 30,
+        "daily_cost_usd": "2.000000",
+        "monthly_cost_usd": "60.000000",
+    }
+
+
 def test_estimate_unknown_model(client: TestClient) -> None:
     response = post_estimate(client, model_id="nope", input_tokens=1, output_tokens=1)
 
@@ -79,6 +97,12 @@ def test_estimate_unknown_model(client: TestClient) -> None:
         {"model_id": "test-model", "input_tokens": MAX_TOKENS + 1, "output_tokens": 0},
         {"model_id": "test-model", "input_tokens": 1},
         {"model_id": "test-model", "input_tokens": 1, "output_tokens": 1, "typo": 1},
+        {
+            "model_id": "test-model",
+            "input_tokens": 1,
+            "output_tokens": 1,
+            "requests_per_day": 0,
+        },
     ],
 )
 def test_estimate_validation_errors(client: TestClient, body: dict[str, Any]) -> None:

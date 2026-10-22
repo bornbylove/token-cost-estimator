@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from tokencost import __version__
 from tokencost.api.errors import register_error_handlers
-from tokencost.api.routes import estimates, health, models
+from tokencost.api.routes import estimates, health, models, tokens
 from tokencost.core.config import Settings
 from tokencost.core.repository import PricingRepository
 from tokencost.core.service import PricingService
@@ -43,6 +43,7 @@ def create_app(
     api = APIRouter(prefix="/api/v1")
     api.include_router(models.router)
     api.include_router(estimates.router)
+    api.include_router(tokens.router)
     app.include_router(api)
 
     return app

@@ -3,7 +3,13 @@
 from datetime import date
 from decimal import ROUND_HALF_UP, Decimal
 
-from tokencost.core.schemas import Estimate, ModelPrice, PriceTier
+from tokencost.core.schemas import (
+    DAYS_PER_MONTH,
+    Estimate,
+    ModelPrice,
+    PriceTier,
+    Projection,
+)
 
 MILLION = Decimal(1_000_000)
 COST_PRECISION = Decimal("0.000001")
@@ -40,6 +46,26 @@ def prices_for(
     )
 
 
+def project(
+    input_tokens: int,
+    output_tokens: int,
+    input_price: Decimal,
+    output_price: Decimal,
+    requests_per_day: int,
+) -> Projection:
+    def cost_of(requests: int) -> Decimal:
+        # Multiply tokens before rounding, so many tiny requests don't round to $0.
+        return token_cost(input_tokens * requests, input_price) + token_cost(
+            output_tokens * requests, output_price
+        )
+
+    return Projection(
+        requests_per_day=requests_per_day,
+        daily_cost_usd=cost_of(requests_per_day),
+        monthly_cost_usd=cost_of(requests_per_day * DAYS_PER_MONTH),
+    )
+
+
 def estimate(
     model: ModelPrice,
     input_tokens: int,
@@ -47,10 +73,19 @@ def estimate(
     *,
     today: date,
     stale_after_days: int,
+    requests_per_day: int | None = None,
 ) -> Estimate:
+    # The price tier depends on the size of each individual request.
     price_tier, input_price, output_price = prices_for(model, input_tokens)
     input_cost = token_cost(input_tokens, input_price)
     output_cost = token_cost(output_tokens, output_price)
+    projection = (
+        None
+        if requests_per_day is None
+        else project(
+            input_tokens, output_tokens, input_price, output_price, requests_per_day
+        )
+    )
 
     return Estimate(
         model_id=model.id,
@@ -63,6 +98,7 @@ def estimate(
         output_cost_usd=output_cost,
         # Sum the rounded parts so the line items always add up to the total.
         total_cost_usd=input_cost + output_cost,
+        projection=projection,
         pricing_status=model.pricing_status,
         effective_date=model.effective_date,
         valid_until=model.valid_until,
