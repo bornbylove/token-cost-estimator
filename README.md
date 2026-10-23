@@ -2,7 +2,7 @@
 
 Estimate and compare the cost of AI model usage across providers.
 
-> **Status:** early development (milestone M3). Prices are checked by hand
+> **Status:** early development (milestone M4). Prices are checked by hand
 > against each provider's official pricing page; each estimate shows the date
 > its prices were checked. Estimates are not invoices.
 
@@ -32,6 +32,28 @@ see [docs/updating-prices.md](docs/updating-prices.md).
 make install   # create .venv and install locked dependencies
 make dev       # run the API at http://127.0.0.1:8000 (docs at /docs)
 ```
+
+## Command line
+
+Install the `tokencost` command (works offline against the bundled prices):
+
+```sh
+pipx install .        # or, inside the repo: uv run tokencost ...
+```
+
+```sh
+tokencost models                                   # prices per 1M tokens
+tokencost estimate claude-haiku-5-5 -i 3k -o 800   # one request
+tokencost estimate gpt-6-luna -i 3k -o 800 -d 5000 # + daily/monthly totals
+tokencost compare -i 3k -o 800 -d 5000             # all models, cheapest first
+tokencost compare gpt-6-astra claude-fable-5-1 -i 300k -o 1k
+cat prompt.txt | tokencost count                   # approximate token count
+```
+
+Token counts accept `3000`, `3,000`, `3k`, or `1.5M`. Add `--json` to any
+command for machine-readable output in the same shape as the REST API.
+Warnings and errors go to stderr. The exit code is 1 for an unknown model or
+an unreadable file, and 2 for invalid arguments.
 
 ## API
 
@@ -79,10 +101,11 @@ validated when the app starts — an invalid file stops the app from booting.
 
 ```
 src/tokencost/
-  core/     business logic: schemas, pricing math, repository, service
+  core/     business logic: schemas, pricing math, repository, service, tokenizer
   api/      FastAPI app factory, routes, error handling
+  cli/      tokencost command (Typer + Rich)
   data/     pricing.yaml
-tests/      unit/ (core) and api/ tests, with fixed fixture pricing
+tests/      unit/, api/ and cli/ tests, with fixed fixture pricing
 ```
 
 ## Development

@@ -2,8 +2,10 @@
 
 from collections.abc import Callable
 from datetime import date
+from typing import Self
 
 from tokencost.core import pricing
+from tokencost.core.config import Settings
 from tokencost.core.repository import PricingRepository
 from tokencost.core.schemas import (
     CompareRequest,
@@ -32,6 +34,14 @@ class PricingService:
         self._repository = repository
         self._stale_after_days = stale_after_days
         self._today = today
+
+    @classmethod
+    def from_settings(
+        cls, settings: Settings, *, today: Callable[[], date] = date.today
+    ) -> Self:
+        """Load pricing from the configured file. Raises PricingDataError."""
+        repository = PricingRepository.from_yaml(settings.pricing_file)
+        return cls(repository, stale_after_days=settings.stale_after_days, today=today)
 
     @property
     def model_count(self) -> int:

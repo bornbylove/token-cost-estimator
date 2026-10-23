@@ -9,9 +9,14 @@ dependencies = [
     "pydantic>=2.9",
     "pydantic-settings>=2.4",
     "pyyaml>=6.0",
+    "rich>=13",
     "tiktoken>=0.9",
+    "typer>=0.12",
     "uvicorn[standard]>=0.30",
 ]
+
+[project.scripts]
+tokencost = "tokencost.cli.main:app"
 
 [dependency-groups]
 dev = [

@@ -8,7 +8,6 @@ from tokencost import __version__
 from tokencost.api.errors import register_error_handlers
 from tokencost.api.routes import estimates, health, models, tokens
 from tokencost.core.config import Settings
-from tokencost.core.repository import PricingRepository
 from tokencost.core.service import PricingService
 
 
@@ -19,16 +18,14 @@ def create_app(
 ) -> FastAPI:
     """Build the app. Fails fast if the pricing file is missing or invalid."""
     settings = settings or Settings()
-    repository = PricingRepository.from_yaml(settings.pricing_file)
+    pricing_service = PricingService.from_settings(settings, today=today)
 
     app = FastAPI(
         title="Token Cost Estimator API",
         description="Estimate token costs across AI providers.",
         version=__version__,
     )
-    app.state.pricing_service = PricingService(
-        repository, stale_after_days=settings.stale_after_days, today=today
-    )
+    app.state.pricing_service = pricing_service
 
     app.add_middleware(
         CORSMiddleware,
