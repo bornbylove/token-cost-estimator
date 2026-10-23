@@ -3,12 +3,14 @@ from datetime import date
 
 from fastapi import APIRouter, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from mcp.server.transport_security import TransportSecuritySettings
 
 from tokencost import __version__
 from tokencost.api.errors import register_error_handlers
 from tokencost.api.routes import estimates, health, models, tokens
 from tokencost.core.config import Settings
 from tokencost.core.service import PricingService
+from tokencost.mcp.server import build_server
 
 
 def create_app(
@@ -20,10 +22,26 @@ def create_app(
     settings = settings or Settings()
     pricing_service = PricingService.from_settings(settings, today=today)
 
+    mcp_server = build_server(pricing_service)
+    # Stateless JSON responses: no per-client sessions to keep, which suits an
+    # anonymous public service and scales horizontally.
+    mcp_app = mcp_server.streamable_http_app(
+        streamable_http_path="/mcp",
+        stateless_http=True,
+        json_response=True,
+        transport_security=TransportSecuritySettings(
+            enable_dns_rebinding_protection=True,
+            allowed_hosts=settings.allowed_hosts,
+            allowed_origins=settings.cors_origins,
+        ),
+    )
+
     app = FastAPI(
         title="Token Cost Estimator API",
         description="Estimate token costs across AI providers.",
         version=__version__,
+        # A mounted app's own lifespan never runs, so start MCP's here.
+        lifespan=lambda _: mcp_server.session_manager.run(),
     )
     app.state.pricing_service = pricing_service
 
@@ -42,5 +60,6 @@ def create_app(
     api.include_router(estimates.router)
     api.include_router(tokens.router)
     app.include_router(api)
+    app.router.routes.extend(mcp_app.routes)
 
     return app

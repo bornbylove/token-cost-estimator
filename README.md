@@ -2,7 +2,7 @@
 
 Estimate and compare the cost of AI model usage across providers.
 
-> **Status:** early development (milestone M4). Prices are checked by hand
+> **Status:** early development (milestone M5). Prices are checked by hand
 > against each provider's official pricing page; each estimate shows the date
 > its prices were checked. Estimates are not invoices.
 
@@ -55,6 +55,36 @@ command for machine-readable output in the same shape as the REST API.
 Warnings and errors go to stderr. The exit code is 1 for an unknown model or
 an unreadable file, and 2 for invalid arguments.
 
+## MCP server (for AI agents)
+
+The same features are available as [MCP](https://modelcontextprotocol.io)
+tools: `list_models`, `estimate_cost`, `compare_models`, and `count_tokens`.
+All of them are read-only, and results use the same JSON shape as the REST API.
+
+**Claude Code (this repo):** `.mcp.json` registers the server automatically.
+Approve it when Claude Code asks.
+
+**Claude Code (anywhere), after `pipx install .`:**
+
+```sh
+claude mcp add tokencost -- tokencost-mcp
+```
+
+**Claude Desktop:** add to `claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "tokencost": { "command": "tokencost-mcp" }
+  }
+}
+```
+
+**Remote (Streamable HTTP):** the web app serves MCP at `/mcp`, statelessly.
+In production, set `TOKENCOST_ALLOWED_HOSTS` to the public hostname, e.g.
+`["tokencost.example.com"]`. Requests with any other `Host` header are
+rejected (DNS rebinding protection).
+
 ## API
 
 All endpoints are documented interactively at `/docs`.
@@ -104,8 +134,9 @@ src/tokencost/
   core/     business logic: schemas, pricing math, repository, service, tokenizer
   api/      FastAPI app factory, routes, error handling
   cli/      tokencost command (Typer + Rich)
+  mcp/      MCP server: stdio (tokencost-mcp) and HTTP (/mcp)
   data/     pricing.yaml
-tests/      unit/, api/ and cli/ tests, with fixed fixture pricing
+tests/      unit/, api/, cli/ and mcp/ tests, with fixed fixture pricing
 ```
 
 ## Development

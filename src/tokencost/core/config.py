@@ -17,5 +17,8 @@ class Settings(BaseSettings):
     )
 
     cors_origins: list[str] = ["http://localhost:5173"]
+    # Host headers accepted by the /mcp endpoint (DNS rebinding protection).
+    # Add the public hostname in production, e.g. ["tokencost.example.com"].
+    allowed_hosts: list[str] = ["127.0.0.1:*", "localhost:*", "[::1]:*"]
     pricing_file: Path = DEFAULT_PRICING_FILE
     stale_after_days: int = Field(default=90, ge=1)
