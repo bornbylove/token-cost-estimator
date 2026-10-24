@@ -1,0 +1,38 @@
+# Fly.io deployment: https://token-cost-estimator.fly.dev
+# Deploy: fly deploy   (builds the Dockerfile remotely on Fly's builders)
+
+app = "token-cost-estimator"
+primary_region = "iad"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  TOKENCOST_ALLOWED_HOSTS = '["token-cost-estimator.fly.dev"]'
+  # Set by Fly Proxy to the real client IP; used for per-client rate limits.
+  TOKENCOST_CLIENT_IP_HEADER = "fly-client-ip"
+
+[http_service]
+  internal_port = 8000
+  force_https = true
+  # Stop when idle and start on the next request: no cost while unused.
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [http_service.concurrency]
+    type = "requests"
+    soft_limit = 200
+    hard_limit = 250
+
+  [[http_service.checks]]
+    method = "GET"
+    path = "/health"
+    interval = "30s"
+    timeout = "3s"
+    grace_period = "10s"
+
+[[vm]]
+  # Measured: ~150 MB idle, ~180 MB under load.
+  size = "shared-cpu-1x"
+  memory = "512mb"

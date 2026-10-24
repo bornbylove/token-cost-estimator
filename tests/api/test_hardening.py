@@ -307,3 +307,44 @@ def test_preload_failure_does_not_stop_startup(
         assert client.get("/health").status_code == 200
 
     assert "tokenizer preload failed" in caplog.text
+
+
+# --- client IP ---
+
+
+def test_client_ip_header_is_used_for_rate_limits(settings: Settings) -> None:
+    client = make_client(
+        settings, rate_limit_per_minute=1, client_ip_header="fly-client-ip"
+    )
+
+    first = client.get("/api/v1/models", headers={"Fly-Client-IP": "203.0.113.7"})
+    same = client.get("/api/v1/models", headers={"Fly-Client-IP": "203.0.113.7"})
+    other = client.get("/api/v1/models", headers={"Fly-Client-IP": "198.51.100.9"})
+
+    assert [first.status_code, same.status_code, other.status_code] == [200, 429, 200]
+
+
+def test_x_forwarded_for_cannot_dodge_rate_limits(settings: Settings) -> None:
+    client = make_client(
+        settings, rate_limit_per_minute=1, client_ip_header="fly-client-ip"
+    )
+    real = {"Fly-Client-IP": "203.0.113.7"}
+
+    client.get("/api/v1/models", headers=real)
+    spoofed = client.get(
+        "/api/v1/models", headers={**real, "X-Forwarded-For": "1.2.3.4"}
+    )
+
+    assert spoofed.status_code == 429
+
+
+def test_invalid_client_ip_header_falls_back_to_peer_address(
+    settings: Settings, caplog: pytest.LogCaptureFixture
+) -> None:
+    client = make_client(settings, client_ip_header="fly-client-ip")
+
+    with caplog.at_level(logging.INFO, logger="tokencost.access"):
+        client.get("/health", headers={"Fly-Client-IP": "not-an-ip"})
+
+    (record,) = [r for r in caplog.records if r.name == "tokencost.access"]
+    assert record.__dict__["client"] == "testclient"

@@ -36,19 +36,21 @@ COPY --from=web /web/dist /app/web
 ENV PATH=/app/.venv/bin:$PATH \
     PYTHONUNBUFFERED=1 \
     PORT=8000 \
-    # Trust X-Forwarded-For from the platform's proxy, for real client IPs in
-    # rate limiting. Narrow this if the container is reachable without a proxy.
-    FORWARDED_ALLOW_IPS=* \
     TIKTOKEN_CACHE_DIR=/app/tiktoken \
     TOKENCOST_FRONTEND_DIR=/app/web \
     TOKENCOST_LOG_FORMAT=json \
     TOKENCOST_PRELOAD_TOKENIZER=true \
     TOKENCOST_CORS_ORIGINS=[]
-# Required in production: the public hostname, e.g. ["tokencost.example.com"].
-# Until it is set, /mcp only accepts localhost Host headers.
+# Set in production:
+#   TOKENCOST_ALLOWED_HOSTS    public hostname, e.g. ["tokencost.example.com"];
+#                              until set, /mcp only accepts localhost Host headers
+#   TOKENCOST_CLIENT_IP_HEADER header your platform's proxy sets to the client IP
+#                              (fly-client-ip on Fly.io), for per-client limits
 
 USER app
 EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s \
     CMD python -c "import os, urllib.request; urllib.request.urlopen(f'http://127.0.0.1:{os.environ[\"PORT\"]}/health', timeout=2)"
-CMD ["sh", "-c", "exec uvicorn tokencost.api.app:create_app --factory --host 0.0.0.0 --port \"$PORT\" --proxy-headers --forwarded-allow-ips \"$FORWARDED_ALLOW_IPS\" --no-access-log --no-server-header"]
+# X-Forwarded-For is deliberately not trusted: its first entry is set by the
+# client. Real client IPs come from TOKENCOST_CLIENT_IP_HEADER instead.
+CMD ["sh", "-c", "exec uvicorn tokencost.api.app:create_app --factory --host 0.0.0.0 --port \"$PORT\" --no-proxy-headers --no-access-log --no-server-header"]

@@ -14,6 +14,7 @@ docker run -p 8000:8000 tokencost          # or: docker compose up --build
 | Variable | Value | Why |
 | --- | --- | --- |
 | `TOKENCOST_ALLOWED_HOSTS` | `["tokencost.example.com"]` | `/mcp` rejects any other `Host` header (DNS rebinding protection). Until this is set, remote MCP clients get `421`. |
+| `TOKENCOST_CLIENT_IP_HEADER` | `fly-client-ip` on Fly.io | A header **your platform's proxy sets** to the real client IP. Rate limits are per client IP; without this, every request appears to come from the proxy and all users share one limit. Never use `X-Forwarded-For`: its first entry comes from the client, so anyone could dodge the limits. |
 
 Everything else has production defaults baked into the image:
 
@@ -25,7 +26,21 @@ Everything else has production defaults baked into the image:
 | `TOKENCOST_TOKEN_COUNT_RATE_LIMIT_PER_MINUTE` | `10` | Stricter limit for `/api/v1/tokens/count`. |
 | `TOKENCOST_MAX_BODY_BYTES` | `4194304` | Larger bodies get `413`. |
 | `TOKENCOST_CORS_ORIGINS` | `[]` | The web app is same-origin, so CORS isn't needed. |
-| `FORWARDED_ALLOW_IPS` | `*` | Trusts `X-Forwarded-For` from the platform's proxy, so rate limits see real client IPs. If the container is reachable **without** a proxy in front, set this to the proxy's address. Otherwise clients can spoof their IP. |
+
+## Fly.io
+
+`fly.toml` is ready for `https://token-cost-estimator.fly.dev`:
+
+```sh
+brew install flyctl
+fly auth login
+fly launch --no-deploy --copy-config --name token-cost-estimator   # first time only
+fly deploy
+```
+
+Machines stop when idle and start on the next request, so an unused app costs
+nothing to run. The first request after idling waits a few seconds while the
+machine starts.
 
 ## Platform notes
 

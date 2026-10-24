@@ -33,6 +33,10 @@ class Settings(BaseSettings):
     # Fits a 1,000,000-character text plus JSON overhead; MCP enforces the same.
     max_body_bytes: int = Field(default=4 * 1024 * 1024, ge=1024)
 
+    # Header the hosting proxy sets to the real client IP, used for rate limits
+    # and logs, e.g. "fly-client-ip" on Fly.io. Unset: the TCP peer address.
+    client_ip_header: str | None = None
+
     # "json" for production log pipelines: one JSON object per line on stdout.
     log_format: Literal["text", "json"] = "text"
     # Load the tokenizer at startup so the first count isn't slow. Containers

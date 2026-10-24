@@ -4,6 +4,7 @@ Pure ASGI rather than BaseHTTPMiddleware, so request bodies can be metered as
 they stream in and nothing is buffered.
 """
 
+import ipaddress
 import logging
 import math
 import re
@@ -43,17 +44,30 @@ _NO_CSP_PREFIXES = ("/docs", "/redoc")
 
 
 class RequestContextMiddleware:
-    """Request IDs, security headers, and one structured access log line."""
+    """Request IDs, security headers, client IP, and one access log line.
 
-    def __init__(self, app: ASGIApp) -> None:
+    `client_ip_header` names a header the hosting platform's proxy sets to the
+    real client IP (e.g. Fly-Client-IP). Never use a header clients can set
+    themselves, such as X-Forwarded-For, whose first entry is client-supplied.
+    """
+
+    def __init__(self, app: ASGIApp, client_ip_header: str | None = None) -> None:
         self.app = app
+        self.client_ip_header = client_ip_header
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if scope["type"] != "http":
             await self.app(scope, receive, send)
             return
 
-        incoming = Headers(scope=scope).get("x-request-id", "")
+        request_headers = Headers(scope=scope)
+        if self.client_ip_header:
+            ip = _valid_ip(request_headers.get(self.client_ip_header, ""))
+            if ip is not None:
+                # Everything downstream (rate limits, logs) sees the real client.
+                scope = {**scope, "client": (ip, 0)}
+
+        incoming = request_headers.get("x-request-id", "")
         request_id = incoming if _REQUEST_ID.match(incoming) else uuid.uuid4().hex
         path: str = scope["path"]
         started = time.perf_counter()
@@ -90,6 +104,13 @@ class RequestContextMiddleware:
                     "client": client[0] if client else None,
                 },
             )
+
+
+def _valid_ip(value: str) -> str | None:
+    try:
+        return str(ipaddress.ip_address(value.strip()))
+    except ValueError:
+        return None
 
 
 class BodySizeLimitMiddleware:
@@ -146,8 +167,8 @@ class RateLimit:
 class RateLimitMiddleware:
     """Per-client-IP token buckets; the first matching rule applies.
 
-    State is in memory, so limits are per process. Behind a proxy, run
-    uvicorn with --proxy-headers so the client IP is the real one.
+    State is in memory, so limits are per process. Behind a proxy, set
+    TOKENCOST_CLIENT_IP_HEADER so the client IP is the real one.
     """
 
     MAX_TRACKED = 10_000

@@ -88,7 +88,9 @@ def create_app(
             RateLimit("/mcp", settings.rate_limit_per_minute),
         ],
     )
-    app.add_middleware(RequestContextMiddleware)
+    app.add_middleware(
+        RequestContextMiddleware, client_ip_header=settings.client_ip_header
+    )
     register_error_handlers(app)
 
     app.include_router(health.router)
