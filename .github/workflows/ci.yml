@@ -68,3 +68,21 @@ jobs:
 
       - name: Typecheck, test, build
         run: make web-check
+
+  image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build the production image
+        run: docker build -t tokencost:ci .
+
+      - name: Smoke test the image offline
+        run: |
+          docker run -d --name tc --network none tokencost:ci
+          for i in $(seq 1 20); do
+            docker exec tc python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/ready')" && break
+            sleep 1
+          done
+          docker exec tc python -c "import json, urllib.request; r = urllib.request.Request('http://127.0.0.1:8000/api/v1/tokens/count', data=b'{\"text\": \"Hello world\"}', headers={'Content-Type': 'application/json'}); assert json.load(urllib.request.urlopen(r))['tokens'] == 2"
+          docker rm -f tc

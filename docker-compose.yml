@@ -1,0 +1,12 @@
+# Production-like local run: docker compose up --build, then open
+# http://localhost:8000
+services:
+  tokencost:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      TOKENCOST_ALLOWED_HOSTS: '["localhost:*", "127.0.0.1:*"]'
+    read_only: true
+    tmpfs:
+      - /tmp

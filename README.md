@@ -2,7 +2,7 @@
 
 Estimate and compare the cost of AI model usage across providers.
 
-> **Status:** early development (milestone M6). Prices are checked by hand
+> **Status:** early development (milestone M7). Prices are checked by hand
 > against each provider's official pricing page; each estimate shows the date
 > its prices were checked. Estimates are not invoices.
 
@@ -51,6 +51,19 @@ make serve         # or: production build served by the API on :8000
 The TypeScript API client is generated from the backend's OpenAPI schema.
 After changing an endpoint or schema, run `make openapi` and commit the
 result. CI fails if they drift apart.
+
+## Running in production
+
+One container serves everything: the web app, the REST API and `/mcp`.
+
+```sh
+docker compose up --build      # http://localhost:8000
+```
+
+It includes per-IP rate limits, a request size limit, security headers
+(including a strict CSP), JSON access logs with request ids, and a bundled
+tokenizer vocabulary, so it needs no network access at runtime. See
+[docs/deploy.md](docs/deploy.md) for configuration and the launch checklist.
 
 ## Command line
 
