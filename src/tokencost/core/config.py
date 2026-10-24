@@ -21,4 +21,7 @@ class Settings(BaseSettings):
     # Add the public hostname in production, e.g. ["tokencost.example.com"].
     allowed_hosts: list[str] = ["127.0.0.1:*", "localhost:*", "[::1]:*"]
     pricing_file: Path = DEFAULT_PRICING_FILE
+    # Built web app (frontend/dist) to serve at /. Unset in development, where
+    # the Vite dev server serves the app and proxies API calls.
+    frontend_dir: Path | None = None
     stale_after_days: int = Field(default=90, ge=1)

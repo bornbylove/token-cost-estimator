@@ -7,6 +7,7 @@ from mcp.server.transport_security import TransportSecuritySettings
 
 from tokencost import __version__
 from tokencost.api.errors import register_error_handlers
+from tokencost.api.frontend import frontend_router
 from tokencost.api.routes import estimates, health, models, tokens
 from tokencost.core.config import Settings
 from tokencost.core.service import PricingService
@@ -61,5 +62,8 @@ def create_app(
     api.include_router(tokens.router)
     app.include_router(api)
     app.router.routes.extend(mcp_app.routes)
+    # Last, so its catch-all route never shadows the API.
+    if settings.frontend_dir is not None:
+        app.include_router(frontend_router(settings.frontend_dir))
 
     return app

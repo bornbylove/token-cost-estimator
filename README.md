@@ -2,7 +2,7 @@
 
 Estimate and compare the cost of AI model usage across providers.
 
-> **Status:** early development (milestone M5). Prices are checked by hand
+> **Status:** early development (milestone M6). Prices are checked by hand
 > against each provider's official pricing page; each estimate shows the date
 > its prices were checked. Estimates are not invoices.
 
@@ -25,6 +25,7 @@ see [docs/updating-prices.md](docs/updating-prices.md).
 
 - Python 3.12+
 - [uv](https://docs.astral.sh/uv/) — install with `brew install uv`
+- Node.js 24 LTS, for the web app only — install with `brew install node@24`
 
 ## Quickstart
 
@@ -32,6 +33,24 @@ see [docs/updating-prices.md](docs/updating-prices.md).
 make install   # create .venv and install locked dependencies
 make dev       # run the API at http://127.0.0.1:8000 (docs at /docs)
 ```
+
+## Web app
+
+Three pages: **Estimate** (one model, with a breakdown and monthly
+projection), **Compare** (every model, cheapest first, as a chart and a
+table), and **Prices** (the price list with sources and check dates). Form
+values are kept in the URL, so any result can be shared as a link.
+
+```sh
+make web-install   # once
+make dev           # terminal 1: API on :8000
+make web-dev       # terminal 2: app on http://localhost:5173 (proxies /api)
+make serve         # or: production build served by the API on :8000
+```
+
+The TypeScript API client is generated from the backend's OpenAPI schema.
+After changing an endpoint or schema, run `make openapi` and commit the
+result. CI fails if they drift apart.
 
 ## Command line
 
@@ -135,6 +154,7 @@ src/tokencost/
   api/      FastAPI app factory, routes, error handling
   cli/      tokencost command (Typer + Rich)
   mcp/      MCP server: stdio (tokencost-mcp) and HTTP (/mcp)
+frontend/   web app: Vite + React + TypeScript, typed client from openapi.json
   data/     pricing.yaml
 tests/      unit/, api/, cli/ and mcp/ tests, with fixed fixture pricing
 ```
@@ -148,6 +168,8 @@ tests/      unit/, api/, cli/ and mcp/ tests, with fixed fixture pricing
 | `make format`    | Auto-fix lint issues and format code      |
 | `make typecheck` | mypy in strict mode                       |
 | `make check`     | Everything CI runs (lint, types, tests)   |
+| `make web-check` | Web app: typecheck, tests, build          |
+| `make openapi`   | Regenerate the web app's typed API client |
 
 Dependencies are pinned in `uv.lock`. Add one with `uv add <package>`
 (or `uv add --dev <package>`) and commit the updated lockfile.

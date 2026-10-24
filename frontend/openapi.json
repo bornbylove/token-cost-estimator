@@ -1,0 +1,814 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Token Cost Estimator API",
+    "description": "Estimate token costs across AI providers.",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": [
+          "health"
+        ],
+        "summary": "Health",
+        "description": "The process is up.",
+        "operationId": "health_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object",
+                  "title": "Response Health Health Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ready": {
+      "get": {
+        "tags": [
+          "health"
+        ],
+        "summary": "Ready",
+        "description": "Pricing data is loaded and requests can be served.",
+        "operationId": "ready_ready_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "integer"
+                      }
+                    ]
+                  },
+                  "type": "object",
+                  "title": "Response Ready Ready Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/models": {
+      "get": {
+        "tags": [
+          "models"
+        ],
+        "summary": "List Models",
+        "operationId": "list_models_api_v1_models_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ModelInfo"
+                  },
+                  "type": "array",
+                  "title": "Response List Models Api V1 Models Get"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown model",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/models/{model_id}": {
+      "get": {
+        "tags": [
+          "models"
+        ],
+        "summary": "Get Model",
+        "operationId": "get_model_api_v1_models__model_id__get",
+        "parameters": [
+          {
+            "name": "model_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Model Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelInfo"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown model",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/estimate": {
+      "post": {
+        "tags": [
+          "estimates"
+        ],
+        "summary": "Estimate Cost",
+        "operationId": "estimate_cost_api_v1_estimate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EstimateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Estimate"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown model",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/compare": {
+      "post": {
+        "tags": [
+          "estimates"
+        ],
+        "summary": "Compare Models",
+        "description": "Estimate the same usage across models, cheapest first.",
+        "operationId": "compare_models_api_v1_compare_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompareRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Comparison"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown model",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tokens/count": {
+      "post": {
+        "tags": [
+          "tokens"
+        ],
+        "summary": "Count Text Tokens",
+        "description": "Approximate the number of tokens in a piece of text. The text is not stored.",
+        "operationId": "count_text_tokens_api_v1_tokens_count_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TokenCountRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenCountResult"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown model",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CompareRequest": {
+        "properties": {
+          "input_tokens": {
+            "type": "integer",
+            "maximum": 1000000000000.0,
+            "minimum": 0.0,
+            "title": "Input Tokens"
+          },
+          "output_tokens": {
+            "type": "integer",
+            "maximum": 1000000000000.0,
+            "minimum": 0.0,
+            "title": "Output Tokens"
+          },
+          "requests_per_day": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 10000000.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Requests Per Day"
+          },
+          "model_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array",
+                "maxItems": 50,
+                "minItems": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Ids"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "input_tokens",
+          "output_tokens"
+        ],
+        "title": "CompareRequest"
+      },
+      "Comparison": {
+        "properties": {
+          "estimates": {
+            "items": {
+              "$ref": "#/components/schemas/Estimate"
+            },
+            "type": "array",
+            "title": "Estimates"
+          },
+          "cheapest_model_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Cheapest Model Ids"
+          }
+        },
+        "type": "object",
+        "required": [
+          "estimates",
+          "cheapest_model_ids"
+        ],
+        "title": "Comparison",
+        "description": "Estimates for several models, cheapest first."
+      },
+      "ErrorBody": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "details": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Details"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "message"
+        ],
+        "title": "ErrorBody"
+      },
+      "ErrorResponse": {
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/ErrorBody"
+          }
+        },
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "title": "ErrorResponse"
+      },
+      "Estimate": {
+        "properties": {
+          "model_id": {
+            "type": "string",
+            "title": "Model Id"
+          },
+          "provider": {
+            "type": "string",
+            "title": "Provider"
+          },
+          "model_name": {
+            "type": "string",
+            "title": "Model Name"
+          },
+          "input_tokens": {
+            "type": "integer",
+            "title": "Input Tokens"
+          },
+          "output_tokens": {
+            "type": "integer",
+            "title": "Output Tokens"
+          },
+          "price_tier": {
+            "type": "string",
+            "enum": [
+              "standard",
+              "long_context"
+            ],
+            "title": "Price Tier"
+          },
+          "input_cost_usd": {
+            "type": "string",
+            "title": "Input Cost Usd"
+          },
+          "output_cost_usd": {
+            "type": "string",
+            "title": "Output Cost Usd"
+          },
+          "total_cost_usd": {
+            "type": "string",
+            "title": "Total Cost Usd"
+          },
+          "currency": {
+            "type": "string",
+            "const": "USD",
+            "title": "Currency",
+            "default": "USD"
+          },
+          "projection": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Projection"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "pricing_status": {
+            "type": "string",
+            "enum": [
+              "illustrative",
+              "verified"
+            ],
+            "title": "Pricing Status"
+          },
+          "effective_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Effective Date"
+          },
+          "valid_until": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valid Until"
+          },
+          "stale": {
+            "type": "boolean",
+            "title": "Stale"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "model_id",
+          "provider",
+          "model_name",
+          "input_tokens",
+          "output_tokens",
+          "price_tier",
+          "input_cost_usd",
+          "output_cost_usd",
+          "total_cost_usd",
+          "pricing_status",
+          "effective_date",
+          "valid_until",
+          "stale",
+          "notes"
+        ],
+        "title": "Estimate",
+        "description": "Cost of a single request. Money values are USD rounded to 6 decimal places."
+      },
+      "EstimateRequest": {
+        "properties": {
+          "input_tokens": {
+            "type": "integer",
+            "maximum": 1000000000000.0,
+            "minimum": 0.0,
+            "title": "Input Tokens"
+          },
+          "output_tokens": {
+            "type": "integer",
+            "maximum": 1000000000000.0,
+            "minimum": 0.0,
+            "title": "Output Tokens"
+          },
+          "requests_per_day": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 10000000.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Requests Per Day"
+          },
+          "model_id": {
+            "type": "string",
+            "title": "Model Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "input_tokens",
+          "output_tokens",
+          "model_id"
+        ],
+        "title": "EstimateRequest"
+      },
+      "LongContextPrice": {
+        "properties": {
+          "above_input_tokens": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Above Input Tokens"
+          },
+          "input_price_per_million": {
+            "type": "string",
+            "title": "Input Price Per Million"
+          },
+          "output_price_per_million": {
+            "type": "string",
+            "title": "Output Price Per Million"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "above_input_tokens",
+          "input_price_per_million",
+          "output_price_per_million"
+        ],
+        "title": "LongContextPrice",
+        "description": "Higher prices that apply to a request whose input exceeds a threshold."
+      },
+      "ModelInfo": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9.-]*$",
+            "title": "Id"
+          },
+          "provider": {
+            "type": "string",
+            "title": "Provider"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "input_price_per_million": {
+            "type": "string",
+            "title": "Input Price Per Million"
+          },
+          "output_price_per_million": {
+            "type": "string",
+            "title": "Output Price Per Million"
+          },
+          "long_context": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LongContextPrice"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "pricing_status": {
+            "type": "string",
+            "enum": [
+              "illustrative",
+              "verified"
+            ],
+            "title": "Pricing Status"
+          },
+          "effective_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Effective Date"
+          },
+          "valid_until": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valid Until"
+          },
+          "source_url": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2083,
+                "minLength": 1,
+                "format": "uri"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Url"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "stale": {
+            "type": "boolean",
+            "title": "Stale"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "provider",
+          "name",
+          "input_price_per_million",
+          "output_price_per_million",
+          "pricing_status",
+          "effective_date",
+          "stale"
+        ],
+        "title": "ModelInfo",
+        "description": "A model's pricing plus whether that pricing is out of date."
+      },
+      "Projection": {
+        "properties": {
+          "requests_per_day": {
+            "type": "integer",
+            "title": "Requests Per Day"
+          },
+          "days_per_month": {
+            "type": "integer",
+            "title": "Days Per Month",
+            "default": 30
+          },
+          "daily_cost_usd": {
+            "type": "string",
+            "title": "Daily Cost Usd"
+          },
+          "monthly_cost_usd": {
+            "type": "string",
+            "title": "Monthly Cost Usd"
+          }
+        },
+        "type": "object",
+        "required": [
+          "requests_per_day",
+          "daily_cost_usd",
+          "monthly_cost_usd"
+        ],
+        "title": "Projection",
+        "description": "Cost of repeating the same request every day."
+      },
+      "TokenCountRequest": {
+        "properties": {
+          "text": {
+            "type": "string",
+            "maxLength": 1000000,
+            "title": "Text"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "text"
+        ],
+        "title": "TokenCountRequest"
+      },
+      "TokenCountResult": {
+        "properties": {
+          "characters": {
+            "type": "integer",
+            "title": "Characters"
+          },
+          "tokens": {
+            "type": "integer",
+            "title": "Tokens"
+          },
+          "method": {
+            "type": "string",
+            "const": "approximate",
+            "title": "Method"
+          },
+          "tokenizer": {
+            "type": "string",
+            "title": "Tokenizer"
+          },
+          "note": {
+            "type": "string",
+            "title": "Note"
+          }
+        },
+        "type": "object",
+        "required": [
+          "characters",
+          "tokens",
+          "method",
+          "tokenizer",
+          "note"
+        ],
+        "title": "TokenCountResult"
+      }
+    }
+  }
+}
