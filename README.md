@@ -2,6 +2,9 @@
 
 Estimate and compare the cost of AI model usage across providers.
 
+**Live:** https://token-cost-estimator.fly.dev · MCP endpoint:
+`https://token-cost-estimator.fly.dev/mcp`
+
 > **Status:** early development (milestone M7). Prices are checked by hand
 > against each provider's official pricing page; each estimate shows the date
 > its prices were checked. Estimates are not invoices.

@@ -42,6 +42,14 @@ Machines stop when idle and start on the next request, so an unused app costs
 nothing to run. The first request after idling waits a few seconds while the
 machine starts.
 
+On first deploy Fly creates **two** machines for availability. Rate limits are
+per machine, so the effective limit is about twice the configured one. To get
+exact limits on a single machine, run `fly scale count 1`.
+
+Verified on the live app (2026-10-24): Fly Proxy overwrites a client-supplied
+`Fly-Client-IP`, so it can't be spoofed. Sending fake `Fly-Client-IP` or
+`X-Forwarded-For` headers still logs and rate-limits the real client IP.
+
 ## Platform notes
 
 - **Health check:** `GET /health` (process up) and `GET /ready` (prices loaded).
